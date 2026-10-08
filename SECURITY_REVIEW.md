@@ -115,3 +115,32 @@ Validate the boundary using a tenant-scoped identity: legitimate access should s
 - Which document operations require a shared API identity, and what tenant isolation is feasible?
 
 These questions refine remediation, they do not remove the configuration exposures identified above.
+
+## Additional risk matrix
+
+This matrix covers findings outside the three priorities above. Broad publisher trust and the mutable production tag are already included in finding 1 and are not counted again.
+
+Scores are qualitative planning estimates for the supplied design approaching production, not measured incident probabilities or CVSS scores. Likelihood: **1 = Low** (requires an uncommon prerequisite), **2 = Medium** (credible under realistic conditions), **3 = High** (expected when the stated trigger occurs). Impact: **1 = Low** (limited disruption), **2 = Medium** (material but recoverable service or investigation impact), **3 = High** (potential confidential-data exposure, unauthorized modification, or broad compromise). **Total = likelihood × impact:** 1–2 Low, 3–4 Medium, 6 High, 9 Critical. Conditional scores apply only if the stated prerequisites hold; they do not establish a confirmed exploit.
+
+| ID | Additional finding / evidence | Affected asset | Likelihood | Impact | Total risk | Evidence limits and rationale |
+|---|---|---|---|---|---|---|
+| A1 | Public origin and exposed operations route: `infra/platform.ts` accepts HTTPS from `0.0.0.0/0`; `kubernetes/api.yaml` routes `/ops/reprocess`. | Operations endpoint and document-processing jobs | Medium (2), conditional | High (3), conditional | **High (6), conditional** | Public routing is shown. Header-only authentication is described in the README but no application implementation verifies it. If that behavior is accurate and no origin restriction exists, direct requests could bypass employee authentication. Exact operation capabilities and cross-tenant impact remain unverified. |
+| A2 | Object access logging and data-event auditing are disabled in `infra/platform.ts`. | Document-access audit trail and incident investigation | Medium (2) | Medium (2) | **Medium (4)** | The gap matters when unauthorized access occurs: management logs alone do not establish which documents were read or changed. This does not independently grant data access. |
+| A3 | Actions use `@v4`; the Dockerfile uses `node:24-alpine`, without immutable references. | CI dependencies, build integrity, container image | Low (1) | High (3) | **Medium (3)** | Compromise or unexpected changes to an upstream reference could affect execution. No compromised dependency is demonstrated. Impact is high if malicious content runs in the privileged publishing job. |
+| A4 | Worker containers have no resource requests or limits in `kubernetes/worker.yaml`. | Worker capacity, cluster nodes, colocated workloads | Medium (2) | Medium (2) | **Medium (4)** | Heavy document-processing jobs or a runaway process could cause resource contention. Effective namespace defaults, workload behavior, and node capacity are not supplied. |
+| A5 | API and worker Deployments have no readiness, liveness, or startup probes. | API availability and processing continuity | Medium (2) | Medium (2) | **Medium (4)** | A process can be running while unready or stuck; without appropriate probes, traffic routing or recovery may be delayed. Application failure behavior is not supplied. |
+| A6 | Container security contexts do not explicitly drop capabilities or set `seccompProfile`. | Container processes and host isolation | Low (1) | High (3), conditional | **Medium (3), conditional** | A compromised process may face fewer restrictions than intended. Effective runtime or admission defaults are unknown; missing settings do not prove a container escape. |
+| A7 | No NetworkPolicy resources appear in the supplied files. | Internal service boundaries and reachable workloads | Medium (2), conditional | High (3), conditional | **High (6), conditional** | If the deployed cluster has no equivalent segmentation, a compromised workload can attempt lateral connections. Absence from this repository does not prove absence in the cluster or successful access to authenticated services. |
+| A8 | Configured audit retention is 30 days in `infra/platform.ts`. | Historical evidence for incident investigation | Low (1), conditional | Medium (2) | **Low (2), conditional** | Investigations starting after retention expires may lose evidence. Adequacy depends on detection times and any external log archive; 30 days is not inherently a vulnerability. |
+
+### Deployment and build readiness gaps
+
+The following are observed configuration defects or incomplete assessment material. They should be checked before production, but are not presented as additional exploitable vulnerabilities. Scores assume the supplied files are used as-is, without omitted prerequisites.
+
+| ID | Gap / evidence | Affected asset | Likelihood | Impact | Total risk | Evidence limits and rationale |
+|---|---|---|---|---|---|---|
+| R1 | Both `apps/v1` Deployments lack the required `spec.selector`. | Deployment pipeline and release availability | High (3) | Medium (2) | **High (6)** | Applying these exact manifests should fail validation. This can block releases; it does not establish an outage of an existing deployment. |
+| R2 | The operations Service selects `app: atlas-api`, but the API pod template provides no matching labels; the referenced `atlas-api` Service is also absent. | API and operations routing | High (3) | Medium (2) | **High (6)** | The supplied resources do not establish working endpoints. Existing Services or external manifest generation could change the runtime outcome. |
+| R3 | The supplied repository lacks application source, `package.json`, and a lockfile; the Dockerfile does not show provisioning of pnpm or build dependencies. | Build reproducibility and release pipeline | High (3) | Medium (2) | **High (6)** | The supplied package is insufficient to demonstrate a successful build. This may be intentional for a configuration-only exercise; it is not evidence of an application vulnerability. |
+
+High availability scores in the readiness table do not override the business-driven top-three priorities: those findings address paths to compromise confidential customer documents or credentials. The matrix is a triage aid, and related rows should not be added together as independent risk totals.

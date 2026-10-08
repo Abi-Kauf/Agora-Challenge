@@ -1,4 +1,4 @@
-# Atlas — Production Security Review
+# Atlas - Production Security Review
 
 **Reviewer:** Abigail Kauf  
 **Scope:** Supplied architecture and configuration  

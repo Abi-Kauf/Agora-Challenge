@@ -116,7 +116,9 @@ Validate the boundary using a tenant-scoped identity: legitimate access should s
 
 These questions refine remediation, they do not remove the configuration exposures identified above.
 
-## Additional risk matrix
+## Extra Information
+
+### Additional risk matrix
 
 This matrix covers findings outside the three priorities above. Broad publisher trust and the mutable production tag are already included in finding 1 and are not counted again.
 

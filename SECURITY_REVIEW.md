@@ -2,7 +2,6 @@
 
 **Reviewer:** Abigail Kauf  
 **Scope:** Supplied architecture and configuration  
-**Baseline reviewed:** `2c390da6088508cdc630a4e1de465e9a49343459`
 
 ## Priority and approach
 
@@ -115,4 +114,4 @@ Validate the boundary using a tenant-scoped identity: legitimate access should s
 - Which Secrets does the worker need, and does it need to discover them dynamically?
 - Which document operations require a shared API identity, and what tenant isolation is feasible?
 
-These questions refine remediation; they do not remove the configuration exposures identified above.
+These questions refine remediation, they do not remove the configuration exposures identified above.
